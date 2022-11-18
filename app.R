@@ -15,11 +15,12 @@ library(shiny)
 library(shinythemes)
 library(RCurl)
 library(ggplot2)
+library(dplyr)
 
 data1 <- read.csv(text = getURL("https://raw.githubusercontent.com/JAChesney/RShiny/main/Meals.csv"))
 # data1 <- read.csv('D:/R/R Shiny learn/Mealssales.csv')
 # Define UI
-ui <- fluidPage(theme = shinytheme("cerulean"),
+ui <- fluidPage(theme = shinytheme("flatly"),
                 navbarPage(
                   # theme = "cerulean",  # <--- To use a theme, uncomment this
                   "EDA",
@@ -37,7 +38,6 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                            mainPanel(
                              # Output: Histogram ----
                              plotOutput(outputId = "distPlot"),
-                             
                            ) # mainPanel 1
                            
                   ), # Navbar 1, tabPanel
@@ -58,8 +58,46 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                            mainPanel(
                              plotOutput(outputId = 'corrPlot')
                            ) # mainPanel 2
-                  ), # Correlation, tabPanel
-                  tabPanel("Navbar 3", "This panel is intentionally left blank")
+                  ), # Correlation, tabPanel 3
+                  tabPanel("Best Item",
+                           sidebarPanel(
+                             selectInput(
+                               inputId = 'OrderItems',
+                               label = 'Choose Sales Rep',
+                               list("TEA",
+                                    "CHOWMIN",
+                                    "PASTA","ALOO TIKKY",        
+                                    "CHOLEY SAMOSE",    
+                                    "CHOLEY BHATUREY",   
+                                    "PAPDI CHAAT",       
+                                    "PAO BHAJI",        
+                                    "DAHI BHALLA",       
+                                    "PEPSI",             
+                                    "COCACOLA",         
+                                    "COFFEE",            
+                                    "DOSA",              
+                                    "IDLI",             
+                                    "MASALA DOSA",       
+                                    "UTTAPAM",           
+                                    "VEG THALI",        
+                                    "SPECIAL VEG THALI", 
+                                    "RAJMA RICE",        
+                                    "CHOLEY RICE",      
+                                    "KADI RICE",         
+                                    "VEG PULAO",         
+                                    "GULAB JAMUN",      
+                                    "RASGULLA",          
+                                    "RASMALAI",            
+                                    "BESAN LADDU",       
+                                    "RASMALAI",         
+                                    "BURGER",          
+                                    "VEG COMBO"),
+                             ) 
+                           ),
+                           mainPanel(
+                             plotOutput(outputId = 'mostordered')
+                           ) # mainPanel 3
+                  ) # Barplot1, tabPanel 3
                   
                 ) # navbarPage
 ) # fluidPage
@@ -69,15 +107,15 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 server <- function(input, output) {
   
   output$distPlot <- renderPlot({
-
+    
     x    <- data1$SALES
     x    <- na.omit(x)
     bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
+    
     hist(x, breaks = bins, col = "#75AADB", border = "black",
          xlab = "Sales",
          main = "Histogram of sales completed")
-
+    
   })
   
   output$corrPlot <- renderPlot({
@@ -89,6 +127,22 @@ server <- function(input, output) {
       labs(y = "Resturant Rating", x = "User Rating",
            title = paste("Simulated data with spearman correlation", 
                          cor(data1$RATING, data1$RESTAURANT.RATING, method = 'spearman')))
+  })
+  
+  re <- reactive({
+    req(input$OrderItems)
+    dt <- data1 %>% filter(data1$ORDER.ITEMS %in% input$OrderItems) %>% group_by(FOOD.POINT) %>% summarize(RATING = mean(RATING))
+  })
+  
+  output$mostordered <- renderPlot({
+    ggplot(re(), aes(x = FOOD.POINT, y = RATING), fill = FOOD.POINT) +
+      geom_bar(stat = "identity") +
+      # scale_x_discrete(breaks=item_brks, labels = item_lbls)+
+      theme(axis.text.x = element_text(colour = "grey20", size = 12, angle = 10, hjust = 0.5, vjust = 0.5),
+            text = element_text(size = 16), 
+            axis.text.y = element_text(colour = "grey20", size = 12, angle = 10, hjust = 0.5, vjust = 0.5)) +
+      labs(y = "Food Rating", x = "Resturants",
+           title = paste("Average Food Rating"))
   })
 } # server
 
