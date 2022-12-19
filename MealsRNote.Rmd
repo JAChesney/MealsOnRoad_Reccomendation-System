@@ -1,0 +1,150 @@
+```{r}
+
+```
+
+# Loading
+
+```{r}
+library(readr)
+Meals <- read_csv("Meals.csv", col_types = cols(`ORDER DATE` = col_date(format = "%d-%m-%Y"), 
+    `ORDER NO` = col_skip(), `CUSTOMER NAME` = col_skip()))
+attach(Meals)
+```
+
+## WeekDays
+
+```{r}
+Meals$Week.Day<-weekdays.POSIXt(`ORDER DATE`)
+```
+
+#### See if receiving coupons changes preferences of dining in and dining out
+
+```{r}
+chisq.test(table(`ORDER TYPE`,COUPON))
+
+#stack_barplot
+Order_type_coupon_p1 = ggplot(MorData, aes(x = `ORDER TYPE`, fill = COUPON)) + 
+  geom_bar(position = "stack")
+Order_type_coupon_p1
+```
+
+The **p-value=0.5396** so we **fail to reject** the Null Hypothesis. Coupons don't affect customer crowds inside restaurants.
+
+### See if Origin city matters when you pay online
+
+```{r}
+chisq.test(table(`ORIGIN CITY`,`PAYMENT MODE`))
+
+#stack_barplot
+Origin_city_payment_p1 = ggplot(MorData, aes(x = `ORIGIN CITY`, fill = `PAYMENT MODE`)) + 
+  geom_bar(position = "stack")
+Origin_city_payment_p1
+
+```
+
+The **p-value=7.389e-06** so we **reject** the Null Hypothesis. Payment Modes are dependent on Origin City.
+
+Chi Square test is not approximate for values less than 5. So our results are inconclusive.
+
+### See if people in different states have different food Preferences
+
+```{r}
+chisq.test(table(STATE,CATEGORY))
+
+#stack_barplot
+State_category_p1 = ggplot(MorData, aes(x = STATE, fill = CATEGORY)) + 
+  geom_bar(position = "stack")
+State_category_p1
+```
+
+Here **p-value=2.644e-07** we reject the Null Hypothesis and say people from different states have different food preferences.
+
+```{r}
+
+chisq.test(table(CATEGORY, weekdays.Date(`ORDER DATE`)))
+
+#stack_barplot
+Category_order_date_p1 = ggplot(MorData, aes(x = CATEGORY, fill = weekdays.Date(`ORDER DATE`))) +
+  geom_bar(position = "stack")
+Category_order_date_p1
+```
+
+### People eat in and eat out regardless of coupons
+
+```{r}
+DineOrder=table(`ORDER TYPE`,COUPON)
+DineOrder
+marginSums(DineOrder,margin = 1)
+marginSums(DineOrder,margin = 2)
+#Dine in with reagrd to coupons
+prop.test(x=c(132,52),n=c(405,145),alternative = "less")
+#Coupons with regard to dineins
+prop.test(x=c(132,273),n=c(184,366),alternative = "less")
+
+#pie_chart
+ggpiestats(
+  data = MorData,
+  x = `ORDER TYPE`,
+  y = COUPON,
+  label = "both",
+  ggtheme = ggplot2::theme_linedraw(),
+  plotgrid.args = list(nrow = 2)
+)
+```
+
+```{r}
+OrderPay=table(`ORDER TYPE`,`PAYMENT MODE`)
+OrderPay
+marginSums(OrderPay,margin = 1)
+marginSums(OrderPay,margin = 2)
+#Dine in with reagrd to coupons
+prop.test(x=c(299,97),n=c(405,145),alternative = "greater",conf.level = 0.93)
+
+#stack_barplot
+Origin_type_payment_p1 = ggplot(MorData, aes(x = `ORDER TYPE`, fill = `PAYMENT MODE`)) + 
+  geom_bar(position = "stack")
+Origin_type_payment_p1
+
+#pie_chart
+ggpiestats(
+  data = MorData,
+  x = `ORDER TYPE`,
+  y = `PAYMENT MODE`,
+  label = "both",
+  ggtheme = ggplot2::theme_linedraw(),
+  plotgrid.args = list(nrow = 2)
+)
+
+```
+
+At **conf level=0.93 p-value=0.06848** we reject Null Hypothesis and conclude proportion for people who use cash mode of payment is more than for proportion of people who use digital payment.
+
+```{r}
+table(`PAYMENT MODE`)
+prop.test(154,550,alternative = "less")
+
+#pie_chart
+ggpiestats(
+  data = MorData,
+  x = `PAYMENT MODE`,
+  label = "both",
+  ggtheme = ggplot2::theme_linedraw(),
+  plotgrid.args = list(nrow = 2)
+)
+```
+
+Here we reject NULL Hypothesis and say that people prefer cash payments compared to digital payments
+
+```{r}
+chisq.test(table(STATE,`PAYMENT MODE`))
+
+#pie_chart
+ggpiestats(
+  data = MorData,
+  x = `PAYMENT MODE`,
+  y = STATE,
+  label = "both",
+  ggtheme = ggplot2::theme_linedraw(),
+  plotgrid.args = list(nrow = 2)
+)
+```
